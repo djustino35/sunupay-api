@@ -28,8 +28,14 @@ resource "aws_db_instance" "ledger" {
   instance_class      = "db.t3.micro"
   allocated_storage   = 20
   username            = "sunupay"
-  password            = "ChangeMe-Ledger-2026"
+  password            = var.db_password
   publicly_accessible = true
   storage_encrypted   = false
   skip_final_snapshot = true
+}
+
+# Lab 1 corrige : le mot de passe est fourni au moment du deploiement, il n'est plus ecrit ici.
+variable "db_password" {
+  type      = string
+  sensitive = true
 }
