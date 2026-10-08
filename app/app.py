@@ -1,6 +1,7 @@
 """SunuPay API - application volontairement vulnerable (formation DevSecOps Foundation).
 NE JAMAIS deployer en production."""
 import hashlib
+import os
 import sqlite3
 import subprocess
 
@@ -9,9 +10,10 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# Lab 1 : secrets en dur dans le code
-DB_PASSWORD = "Sunu!Pay#Pr0d-2026-xK9vQ2mZ7tLw"
-PAYMENT_GATEWAY_TOKEN = "spg_live_8f3b2c1d9e7a6f5b4c3d2e1f0a9b8c7d"
+# Lab 1 corrige : les secrets ne sont plus dans le code.
+# Le programme les lit dans l'environnement, au moment ou il demarre.
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+PAYMENT_GATEWAY_TOKEN = os.environ.get("PAYMENT_GATEWAY_TOKEN", "")
 
 DB = "/tmp/sunupay.db"
 
