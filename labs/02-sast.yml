@@ -1,0 +1,34 @@
+name: 02 - SAST
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bandit
+      - name: Bandit (rapport complet)
+        run: bandit -r app -f json -o bandit.json --exit-zero
+      - name: Bandit (porte de qualite - gravite haute)
+        run: bandit -r app -lll
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-sast-bandit
+          path: bandit.json
+  semgrep:
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep
+        run: semgrep scan --config p/python --config p/flask --error --json-output=semgrep.json app
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-sast-semgrep
+          path: semgrep.json

@@ -1,0 +1,59 @@
+name: DevSecOps - pipeline complet
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SEUIL_IMAGE: CRITICAL          # seuil de la porte : a resserrer en HIGH,CRITICAL
+  TRIVY: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${{ github.workspace }}:/src -w /src aquasec/trivy:latest
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest detect --source /repo --redact
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bandit && bandit -r app -lll
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit && pip-audit -r requirements.txt --no-deps
+  image-iac:
+    needs: [secrets, sast, sca]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t sunupay-api:${{ github.sha }} .
+      - run: $TRIVY image --severity $SEUIL_IMAGE --ignore-unfixed --exit-code 1 --quiet sunupay-api:${{ github.sha }}
+      - run: $TRIVY config --severity HIGH,CRITICAL --exit-code 1 .
+  dast:
+    needs: image-iac
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build -t sunupay-api .
+          docker run -d -p 5000:5000 sunupay-api
+          for i in $(seq 1 30); do curl -fs http://localhost:5000/ && break; sleep 2; done
+          chmod 777 .
+          docker run --rm --network host -v "$PWD:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:5000 -r zap.html -I
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preuves-conformite-dast
+          path: zap.html
