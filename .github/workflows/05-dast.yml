@@ -1,0 +1,24 @@
+name: 05 - DAST
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Demarrer l'application
+        run: |
+          docker build -t sunupay-api .
+          docker run -d --name api -p 5000:5000 sunupay-api
+          for i in $(seq 1 30); do curl -fs http://localhost:5000/ && break; sleep 2; done
+      - name: OWASP ZAP - baseline
+        run: |
+          chmod 777 .
+          docker run --rm --network host -v "$PWD:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:5000 -r zap.html -I
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-dast
+          path: zap.html
