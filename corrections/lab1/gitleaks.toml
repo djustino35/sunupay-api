@@ -1,6 +1,5 @@
 [allowlist]
 description = "Commits historiques ou faux positifs à ignorer entièrement"
 commits = [
-    "b063f8cc69e279f8626e1847171bae2975ae5d56",
     "b063f8cc69e279f8626e1847171bae2975ae5d56"
 ]
