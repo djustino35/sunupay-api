@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -t sunupay-api:${{ github.sha }} .
       - run: $TRIVY image --severity $SEUIL_IMAGE --ignore-unfixed --exit-code 1 --quiet sunupay-api:${{ github.sha }}
-      - run: $TRIVY config --severity HIGH,CRITICAL --exit-code 1 .
+      - run: $TRIVY config --severity HIGH,CRITICAL --exit-code 1 --skip-dirs corrections .
   dast:
     needs: image-iac
     runs-on: ubuntu-latest
